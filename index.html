@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ballpark Vacation Planner & Statcast Fly Ball Heatmap</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .spray-field {
+      background: radial-gradient(circle at 50% 90%, #2e7d32 0%, #1b5e20 85%);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Header -->
+  <header class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-30 shadow-md">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="text-3xl">⚾</span>
+        <div>
+          <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+            Ballpark Vacation & Statcast Tracker
+          </h1>
+          <p class="text-xs text-slate-400">Discover MLB & MiLB games and analyze fly ball landing zones</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2 text-xs text-slate-400 bg-slate-900/60 px-3 py-1.5 rounded-full border border-slate-700">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>MLB Live Stats API Connected</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto p-4 sm:p-6 w-full flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left Column: Vacation Form & Game List (lg:col-span-7) -->
+    <section class="lg:col-span-7 flex flex-col space-y-4">
+
+      <!-- Vacation Dates Input Card -->
+      <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl">
+        <h2 class="text-base font-semibold mb-3 flex items-center gap-2 text-slate-200">
+          <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> Plan Vacation Days
+        </h2>
+
+        <form id="search-form" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Start Date</label>
+            <input type="date" id="start-date" required
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">End Date</label>
+            <input type="date" id="end-date" required
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+          </div>
+          <div class="flex items-end">
+            <button type="submit" id="search-btn"
+              class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition duration-150 shadow-lg shadow-emerald-900/30">
+              <i data-lucide="search" class="w-4 h-4"></i> Search Games
+            </button>
+          </div>
+        </form>
+
+        <!-- League Filter Switches -->
+        <div class="mt-4 pt-3 border-t border-slate-700/60 flex flex-wrap gap-4 text-xs text-slate-300">
+          <span class="text-slate-400 self-center">Leagues:</span>
+          <label class="inline-flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="check-mlb" checked class="accent-emerald-500 rounded"> MLB (Major)
+          </label>
+          <label class="inline-flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="check-aaa" checked class="accent-emerald-500 rounded"> Triple-A (AAA)
+          </label>
+          <label class="inline-flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="check-aa" checked class="accent-emerald-500 rounded"> Double-A (AA)
+          </label>
+          <label class="inline-flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="check-a" checked class="accent-emerald-500 rounded"> High-A / Single-A
+          </label>
+        </div>
+      </div>
+
+      <!-- Games List -->
+      <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl flex-grow flex flex-col overflow-hidden">
+        <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/80">
+          <h2 class="font-semibold text-slate-200 flex items-center gap-2">
+            <i data-lucide="list" class="w-4 h-4 text-cyan-400"></i> Games Found
+            <span id="game-count" class="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full ml-1">0</span>
+          </h2>
+          <span class="text-xs text-slate-400">Click any game to inspect Statcast fly balls</span>
+        </div>
+
+        <div id="games-container" class="p-4 overflow-y-auto space-y-3 max-h-[600px] flex-grow">
+          <div class="text-center py-16 text-slate-500">
+            <i data-lucide="compass" class="w-10 h-10 mx-auto stroke-[1.5] mb-2 opacity-60"></i>
+            <p class="text-sm">Select your travel vacation dates above to search ballgames.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Statcast & Ticket Desk (lg:col-span-5) -->
+    <section class="lg:col-span-5 flex flex-col space-y-4">
+
+      <!-- Selected Game Banner & Buy Tickets Card -->
+      <div id="selected-game-card" class="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <span id="detail-league-badge" class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-700 text-slate-300">
+              League
+            </span>
+            <h2 id="detail-matchup" class="text-lg font-bold text-slate-100 mt-1">Select a Game</h2>
+            <p id="detail-venue" class="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-500"></i> Stadium & Time
+            </p>
+          </div>
+          <!-- Buy Tickets Button -->
+          <a id="buy-tickets-btn" href="#" target="_blank" rel="noopener noreferrer"
+             class="opacity-50 pointer-events-none inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl shadow-lg transition duration-200">
+            <i data-lucide="ticket" class="w-4 h-4"></i> Buy Tickets
+          </a>
+        </div>
+      </div>
+
+      <!-- Statcast Spray Chart Visualization -->
+      <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl p-5 flex flex-col items-center">
+        <div class="w-full flex justify-between items-center mb-3">
+          <h3 class="text-sm font-semibold flex items-center gap-2 text-slate-200">
+            <i data-lucide="crosshair" class="w-4 h-4 text-emerald-400"></i> Fly Ball Landing Heatmap
+          </h3>
+          <span id="flyball-count" class="text-xs bg-emerald-950 border border-emerald-800 text-emerald-300 px-2 py-0.5 rounded">
+            0 Fly Balls
+          </span>
+        </div>
+
+        <!-- Baseball Field SVG / Canvas Container -->
+        <div class="relative w-full aspect-square max-w-[380px] rounded-2xl overflow-hidden spray-field border border-emerald-700/60 shadow-inner">
+          <svg id="spray-chart" viewBox="0 0 250 250" class="w-full h-full">
+            <!-- Outfield grass markings -->
+            <path d="M 125 210 L 20 105 A 150 150 0 0 1 230 105 Z" fill="#236e28" opacity="0.6"/>
+            <!-- Infield Dirt Diamond -->
+            <polygon points="125,145 160,180 125,215 90,180" fill="#a77044" stroke="#c48a56" stroke-width="1"/>
+            <!-- Infield Grass -->
+            <polygon points="125,152 153,180 125,208 97,180" fill="#2e7d32"/>
+            <!-- Foul Lines -->
+            <line x1="125" y1="210" x2="20" y2="105" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.8"/>
+            <line x1="125" y1="210" x2="230" y2="105" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.8"/>
+            <!-- Outfield Wall Arc -->
+            <path d="M 20 105 A 148 148 0 0 1 230 105" fill="none" stroke="#facc15" stroke-width="2" opacity="0.7"/>
+            <!-- Bases & Mound -->
+            <rect x="123" y="143" width="4" height="4" fill="#ffffff" transform="rotate(45 125 145)"/> <!-- 2nd -->
+            <rect x="158" y="178" width="4" height="4" fill="#ffffff" transform="rotate(45 160 180)"/> <!-- 1st -->
+            <rect x="88" y="178" width="4" height="4" fill="#ffffff" transform="rotate(45 90 180)"/>  <!-- 3rd -->
+            <polygon points="125,210 128,213 125,216 122,213" fill="#ffffff"/> <!-- Home Plate -->
+            <circle cx="125" cy="180" r="3" fill="#a77044" stroke="#ffffff" stroke-width="0.5"/> <!-- Mound -->
+
+            <!-- Dynamic Fly Ball Plots (coords layer) -->
+            <g id="hit-markers-group"></g>
+          </svg>
+
+          <!-- Empty or Loading Overlay -->
+          <div id="chart-overlay" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-center p-4">
+            <i data-lucide="pie-chart" class="w-8 h-8 text-slate-500 mb-2"></i>
+            <p id="chart-overlay-msg" class="text-xs text-slate-400">Select any game to plot Statcast batted ball landing locations.</p>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="w-full mt-3 flex justify-around text-[11px] text-slate-400 border-t border-slate-700/60 pt-2">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> Home Run / Extra Base
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Flyout / Caught
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Base Hit
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Default dates: Upcoming 5-day window from today
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 6);
+    document.getElementById('start-date').value = today.toISOString().split('T');
+    document.getElementById('end-date').value = nextWeek.toISOString().split('T');
+
+    // Sport IDs according to MLB Stats API:
+    // 1: MLB, 11: Triple-A (AAA), 12: Double-A (AA), 13: High-A (A+), 14: Single-A (A)
+    function getSelectedSportIds() {
+      const sports = [];
+      if (document.getElementById('check-mlb').checked) sports.push(1);
+      if (document.getElementById('check-aaa').checked) sports.push(11);
+      if (document.getElementById('check-aa').checked) sports.push(12);
+      if (document.getElementById('check-a').checked) sports.push(13, 14);
+      return sports.join(',');
+    }
+
+    const searchForm = document.getElementById('search-form');
+    const gamesContainer = document.getElementById('games-container');
+    const gameCountBadge = document.getElementById('game-count');
+
+    searchForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const startDate = document.getElementById('start-date').value;
+      const endDate = document.getElementById('end-date').value;
+      const sportIds = getSelectedSportIds();
+
+      if (!sportIds) {
+        alert("Please select at least one league category.");
+        return;
+      }
+
+      gamesContainer.innerHTML = `
+        <div class="text-center py-16 text-slate-400">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-2 border-emerald-500 border-t-transparent mb-3"></div>
+          <p class="text-sm">Fetching scheduled games from MLB Stats API...</p>
+        </div>
+      `;
+
+      try {
+        const url = `https://statsapi.mlb.com/api/v1/schedule?sportId=${sportIds}&startDate=${startDate}&endDate=${endDate}&hydrate=team,venue,linescore`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        renderGames(data.dates || []);
+      } catch (err) {
+        console.error(err);
+        gamesContainer.innerHTML = `
+          <div class="text-center py-12 text-rose-400">
+            <p class="text-sm font-semibold">Failed to fetch MLB schedule.</p>
+            <p class="text-xs text-slate-400 mt-1">Please check your network connection and try again.</p>
+          </div>
+        `;
+      }
+    });
+
+    function renderGames(dates) {
+      let allGames = [];
+      dates.forEach(d => {
+        if (d.games) {
+          d.games.forEach(g => {
+            allGames.push({ ...g, calendarDate: d.date });
+          });
+        }
+      });
+
+      gameCountBadge.textContent = allGames.length;
+
+      if (allGames.length === 0) {
+        gamesContainer.innerHTML = `
+          <div class="text-center py-16 text-slate-500">
+            <p class="text-sm">No games found for the selected dates & leagues.</p>
+            <p class="text-xs text-slate-600 mt-1">Try expanding your dates or checking more leagues.</p>
+          </div>
+        `;
+        return;
+      }
+
+      gamesContainer.innerHTML = '';
+      allGames.forEach(game => {
+        const awayTeam = game.teams.away.team.name;
+        const homeTeam = game.teams.home.team.name;
+        const venueName = game.venue?.name || 'Ballpark TBD';
+        const gameDate = new Date(game.gameDate).toLocaleDateString([], { month: 'short', day: 'numeric', weekday: 'short' });
+        const gameTime = new Date(game.gameDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const isLive = game.status.abstractGameState === 'Live';
+        const isFinal = game.status.abstractGameState === 'Final';
+
+        // Categorize badge
+        let leagueLabel = 'MiLB';
+        const sportId = game.gameType || '';
+        // MLB uses sportId 1
+        if (game.teams.home.team.sport?.id === 1 || !game.teams.home.team.sport) {
+          leagueLabel = 'MLB';
+        }
+
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-xl border border-slate-700/80 bg-slate-900/60 hover:bg-slate-700/50 hover:border-emerald-500/50 cursor-pointer transition flex justify-between items-center group`;
+        card.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${leagueLabel === 'MLB' ? 'bg-blue-900 text-blue-200' : 'bg-emerald-950 text-emerald-300'}">
+                ${leagueLabel}
+              </span>
+              <span class="text-xs text-slate-400">${gameDate} · ${gameTime}</span>
+              ${isLive ? '<span class="text-[10px] bg-red-950 text-red-400 border border-red-800 px-1 rounded animate-pulse">LIVE</span>' : ''}
+              ${isFinal ? '<span class="text-[10px] text-slate-500">FINAL</span>' : ''}
+            </div>
+            <div class="text-sm font-semibold text-slate-200 group-hover:text-emerald-300 transition">
+              ${awayTeam} <span class="text-slate-500 font-normal">@</span> ${homeTeam}
+            </div>
+            <div class="text-xs text-slate-400 flex items-center gap-1">
+              <i data-lucide="map-pin" class="w-3 h-3 text-slate-500"></i> ${venueName}
+            </div>
+          </div>
+          <div>
+            <button class="bg-slate-800 group-hover:bg-emerald-600 group-hover:text-white border border-slate-700 p-2 rounded-lg text-slate-300 transition">
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        card.addEventListener('click', () => {
+          selectGame(game);
+        });
+
+        gamesContainer.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    // Handle Game Selection, Statcast Querying, and Ticket link generation
+    async function selectGame(game) {
+      const matchup = `${game.teams.away.team.name} vs ${game.teams.home.team.name}`;
+      const venue = game.venue?.name || 'Local Stadium';
+      const gameDateStr = new Date(game.gameDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
+
+      document.getElementById('detail-matchup').textContent = matchup;
+      document.getElementById('detail-venue').textContent = `${venue} · ${gameDateStr}`;
+
+      // Setup "Buy Tickets" Button
+      const ticketBtn = document.getElementById('buy-tickets-btn');
+      ticketBtn.classList.remove('opacity-50', 'pointer-events-none');
+
+      // Build search ticket query (Major MLB teams tickets page or SeatGeek fallback)
+      const searchQuery = encodeURIComponent(`${game.teams.home.team.name} tickets ${gameDateStr}`);
+      ticketBtn.href = `https://www.seatgeek.com/search?search=${searchQuery}`;
+
+      // Statcast Fly Ball Analysis via game feed live endpoint
+      fetchStatcastFlyBalls(game.gamePk);
+    }
+
+    async function fetchStatcastFlyBalls(gamePk) {
+      const overlay = document.getElementById('chart-overlay');
+      const overlayMsg = document.getElementById('chart-overlay-msg');
+      const hitGroup = document.getElementById('hit-markers-group');
+      const flyballBadge = document.getElementById('flyball-count');
+
+      // Clear previous hit markers
+      hitGroup.innerHTML = '';
+      overlay.classList.remove('hidden');
+      overlayMsg.innerHTML = `<div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent mb-2"></div><br>Querying Statcast play-by-play data...`;
+
+      try {
+        const liveFeedUrl = `https://statsapi.mlb.com/api/v1.1/game/${gamePk}/feed/live`;
+        const res = await fetch(liveFeedUrl);
+        const data = await res.json();
+
+        const allPlays = data.liveData?.plays?.allPlays || [];
+        const flyBalls = [];
+
+        allPlays.forEach(play => {
+          // Inspect play events and hitData
+          const events = play.playEvents || [];
+          events.forEach(evt => {
+            if (evt.hitData) {
+              const trajectory = (evt.hitData.trajectory || '').toLowerCase();
+              // Check if play was a fly ball, line drive, or popup
+              if (trajectory === 'fly_ball' || trajectory === 'popup' || trajectory === 'line_drive') {
+                if (evt.hitData.coordinates && evt.hitData.coordinates.coordX && evt.hitData.coordinates.coordY) {
+                  flyBalls.push({
+                    x: evt.hitData.coordinates.coordX,
+                    y: evt.hitData.coordinates.coordY,
+                    event: play.result?.event || 'In Play',
+                    trajectory: trajectory,
+                    desc: play.result?.description || ''
+                  });
+                }
+              }
+            }
+          });
+        });
+
+        flyballBadge.textContent = `${flyBalls.length} Fly Balls`;
+
+        if (flyBalls.length === 0) {
+          overlayMsg.textContent = "No Statcast tracked fly ball coordinates available for this game yet (Game may be upcoming or uncalibrated MiLB venue).";
+          return;
+        }
+
+        // Hide overlay and plot
+        overlay.classList.add('hidden');
+        renderSprayMarkers(flyBalls);
+
+      } catch (err) {
+        console.error(err);
+        overlayMsg.textContent = "Unable to retrieve Statcast feed for this game.";
+      }
+    }
+
+    // Transform Statcast Gameday 2D coordinates into SVG viewbox (0-250)
+    // MLB Stats API hitData coordinates are roughly based on a 250x250 coordinate system
+    // where Home Plate is situated at ~ (125, 205-215).
+    function renderSprayMarkers(flyBalls) {
+      const hitGroup = document.getElementById('hit-markers-group');
+      hitGroup.innerHTML = '';
+
+      flyBalls.forEach(ball => {
+        let color = '#38bdf8'; // sky blue for fly outs
+        const eventLower = ball.event.toLowerCase();
+
+        if (eventLower.includes('home run') || eventLower.includes('triple') || eventLower.includes('double')) {
+          color = '#ef4444'; // Red for extra bases / HR
+        } else if (eventLower.includes('single')) {
+          color = '#34d399'; // Emerald for standard base hit
+        }
+
+        // Create circle marker
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', ball.x);
+        circle.setAttribute('cy', ball.y);
+        circle.setAttribute('r', '4');
+        circle.setAttribute('fill', color);
+        circle.setAttribute('stroke', '#ffffff');
+        circle.setAttribute('stroke-width', '1');
+        circle.setAttribute('class', 'transition hover:r-6 cursor-pointer drop-shadow');
+
+        // Tooltip title
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        title.textContent = `${ball.event} (${ball.trajectory})\n${ball.desc}`;
+        circle.appendChild(title);
+
+        hitGroup.appendChild(circle);
+      });
+    }
+  </script>
+</body>
+</html>
