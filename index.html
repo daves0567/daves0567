@@ -207,7 +207,7 @@
     // Fetch teams on load
     async function fetchTeams() {
       try {
-        const res = await fetch('https://statsapi.mlb.com/api/v1/teams?sportId=1,11,12,13,14');
+        const res = await fetch('https://statsapi.mlb.com/api/v1/teams');
         const data = await res.json();
         // Filter out inactive teams and sort alphabetically
         allTeams = data.teams.filter(t => t.active).sort((a, b) => a.name.localeCompare(b.name));
