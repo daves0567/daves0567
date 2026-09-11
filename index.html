@@ -236,12 +236,22 @@ updateDisplayedTeams();
         list.appendChild(label);
       });
 
-      // Update global array whenever a checkbox is toggled
-      document.querySelectorAll('.team-cb').forEach(cb => {
-        cb.addEventListener('change', () => {
-          selectedTeamIds = Array.from(document.querySelectorAll('.team-cb:checked')).map(box => parseInt(box.value));
-        });
-      });
+// Update global array intelligently so hidden checked teams aren't lost
+document.querySelectorAll('.team-cb').forEach(cb => {
+  cb.addEventListener('change', (e) => {
+    const teamId = parseInt(e.target.value);
+    
+    if (e.target.checked) {
+      // Add team if it isn't already in the list
+      if (!selectedTeamIds.includes(teamId)) {
+        selectedTeamIds.push(teamId);
+      }
+    } else {
+      // Remove team if unchecked
+      selectedTeamIds = selectedTeamIds.filter(id => id !== teamId);
+    }
+  });
+});
     }
 
 function updateDisplayedTeams() {
@@ -276,10 +286,15 @@ leagueFilters.forEach(id => {
 
     fetchTeams(); // Trigger immediately
 
+    // Calculate standard JS dates safely
+const start = new Date();
+const end = new Date();
+end.setDate(start.getDate() + 6);
+
 // Initialize Flatpickr Calendar Controls
 const startDatePicker = flatpickr("#start-date", {
   dateFormat: "Y-m-d",
-  defaultDate: "today",
+  defaultDate: start,
   onChange: function(selectedDates, dateStr, instance) {
     // Prevent end date from being before start date
     endDatePicker.set('minDate', dateStr);
@@ -288,10 +303,10 @@ const startDatePicker = flatpickr("#start-date", {
 
 const endDatePicker = flatpickr("#end-date", {
   dateFormat: "Y-m-d",
-  defaultDate: new Date().fp_incr(6), // Sets default to 6 days from today
-  minDate: "today"
+  defaultDate: end,
+  minDate: start
 });
-
+    
     // Sport IDs according to MLB Stats API:
     // 1: MLB, 11: Triple-A (AAA), 12: Double-A (AA), 13: High-A (A+), 14: Single-A (A)
     function getSelectedSportIds() {
