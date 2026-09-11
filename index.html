@@ -20,7 +20,6 @@
     .spray-field {
       background: radial-gradient(circle at 50% 90%, #2e7d32 0%, #1b5e20 85%);
     }
-    /* Custom scrollbar for team list */
     #team-checkbox-list::-webkit-scrollbar {
       width: 4px;
     }
@@ -54,7 +53,7 @@
   <!-- Main Container -->
   <main class="max-w-7xl mx-auto p-4 sm:p-6 w-full flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-    <!-- Left Column: Vacation Form & Game List (lg:col-span-7) -->
+    <!-- Left Column: Vacation Form & Game List -->
     <section class="lg:col-span-7 flex flex-col space-y-4">
 
       <!-- Vacation Dates & Teams Input Card -->
@@ -64,7 +63,6 @@
         </h2>
 
         <form id="search-form" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <!-- Dates -->
           <div>
             <label class="block text-xs text-slate-400 mb-1">Start Date</label>
             <input type="text" id="start-date" required
@@ -132,7 +130,7 @@
       </div>
     </section>
 
-    <!-- Right Column: Statcast & Ticket Desk (lg:col-span-5) -->
+    <!-- Right Column: Statcast & Ticket Desk -->
     <section class="lg:col-span-5 flex flex-col space-y-4">
 
       <!-- Selected Game Banner & Buy Tickets Card -->
@@ -169,25 +167,18 @@
         <!-- Baseball Field SVG / Canvas Container -->
         <div class="relative w-full aspect-square max-w-[380px] rounded-2xl overflow-hidden spray-field border border-emerald-700/60 shadow-inner">
           <svg id="spray-chart" viewBox="0 0 250 250" class="w-full h-full">
-            <!-- Outfield grass markings -->
             <path d="M 125 210 L 20 105 A 150 150 0 0 1 230 105 Z" fill="#236e28" opacity="0.6"/>
-            <!-- Infield Dirt Diamond -->
             <polygon points="125,145 160,180 125,215 90,180" fill="#a77044" stroke="#c48a56" stroke-width="1"/>
-            <!-- Infield Grass -->
             <polygon points="125,152 153,180 125,208 97,180" fill="#2e7d32"/>
-            <!-- Foul Lines -->
             <line x1="125" y1="210" x2="20" y2="105" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.8"/>
             <line x1="125" y1="210" x2="230" y2="105" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.8"/>
-            <!-- Outfield Wall Arc -->
             <path d="M 20 105 A 148 148 0 0 1 230 105" fill="none" stroke="#facc15" stroke-width="2" opacity="0.7"/>
-            <!-- Bases & Mound -->
-            <rect x="123" y="143" width="4" height="4" fill="#ffffff" transform="rotate(45 125 145)"/> <!-- 2nd -->
-            <rect x="158" y="178" width="4" height="4" fill="#ffffff" transform="rotate(45 160 180)"/> <!-- 1st -->
-            <rect x="88" y="178" width="4" height="4" fill="#ffffff" transform="rotate(45 90 180)"/>  <!-- 3rd -->
-            <polygon points="125,210 128,213 125,216 122,213" fill="#ffffff"/> <!-- Home Plate -->
-            <circle cx="125" cy="180" r="3" fill="#a77044" stroke="#ffffff" stroke-width="0.5"/> <!-- Mound -->
+            <rect x="123" y="143" width="4" height="4" fill="#ffffff" transform="rotate(45 125 145)"/>
+            <rect x="158" y="178" width="4" height="4" fill="#ffffff" transform="rotate(45 160 180)"/>
+            <rect x="88" y="178" width="4" height="4" fill="#ffffff" transform="rotate(45 90 180)"/>
+            <polygon points="125,210 128,213 125,216 122,213" fill="#ffffff"/>
+            <circle cx="125" cy="180" r="3" fill="#a77044" stroke="#ffffff" stroke-width="0.5"/>
 
-            <!-- Dynamic Fly Ball Plots (coords layer) -->
             <g id="hit-markers-group"></g>
           </svg>
 
@@ -216,12 +207,9 @@
   </main>
 
   <script>
-    // Initialize Lucide Icons
     lucide.createIcons();
 
-    // ----------------------------------------------------
-    // 1. DATE PICKER SETUP (Flatpickr)
-    // ----------------------------------------------------
+    // 1. DATE PICKER SETUP
     const start = new Date();
     const end = new Date();
     end.setDate(start.getDate() + 6);
@@ -229,7 +217,7 @@
     const startDatePicker = flatpickr("#start-date", {
       dateFormat: "Y-m-d",
       defaultDate: start,
-      onChange: function(selectedDates, dateStr, instance) {
+      onChange: function(selectedDates, dateStr) {
         endDatePicker.set('minDate', dateStr);
       }
     });
@@ -240,13 +228,10 @@
       minDate: start
     });
 
-    // ----------------------------------------------------
     // 2. TEAM FETCHING & FILTERING
-    // ----------------------------------------------------
     let allTeams = [];
     let selectedTeamIds = []; 
 
-    // Sport IDs: 1 (MLB), 11 (AAA), 12 (AA), 13 (High-A), 14 (Single-A)
     function getSelectedSportIds() {
       const sports = [];
       if (document.getElementById('check-mlb').checked) sports.push(1);
@@ -258,7 +243,7 @@
 
     async function fetchTeams() {
       try {
-        const res = await fetch('https://statsapi.mlb.com/api/v1/teams?"sportId=1,11,12,13,14"');
+        const res = await fetch('https://statsapi.mlb.com/api/v1/teams?sportId=1,11,12,13,14');
         const data = await res.json();
         allTeams = data.teams.filter(t => t.active).sort((a, b) => a.name.localeCompare(b.name));
         updateDisplayedTeams();
@@ -281,7 +266,6 @@
         list.appendChild(label);
       });
       
-      // Update global array intelligently
       document.querySelectorAll('.team-cb').forEach(cb => {
         cb.addEventListener('change', (e) => {
           const teamId = parseInt(e.target.value);
@@ -315,14 +299,11 @@
 
     fetchTeams();
 
-    // ----------------------------------------------------
     // 3. SEARCH SCHEDULE & RENDER GAMES
-    // ----------------------------------------------------
     const searchForm = document.getElementById('search-form');
     const gamesContainer = document.getElementById('games-container');
     const gameCountBadge = document.getElementById('game-count');
 
-    // Use 'submit' instead of 'search-btn'
     searchForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const startDate = document.getElementById('start-date').value;
@@ -334,6 +315,20 @@
         return;
       }
 
+      const startD = new Date(startDate);
+      const endD = new Date(endDate);
+      const daysDiff = (endD - startD) / (1000 * 60 * 60 * 24);
+
+      if (selectedTeamIds.length === 0 && daysDiff > 45) {
+        alert("To search a date range longer than 45 days, please select at least one Favorite Team to prevent overloading the MLB API.");
+        return;
+      }
+
+      let teamParam = '';
+      if (selectedTeamIds.length > 0) {
+        teamParam = `&teamId=${selectedTeamIds.join(',')}`;
+      }
+
       gamesContainer.innerHTML = `
         <div class="text-center py-16 text-slate-400">
           <div class="inline-block animate-spin rounded-full h-8 w-8 border-2 border-emerald-500 border-t-transparent mb-3"></div>
@@ -342,8 +337,10 @@
       `;
 
       try {
-        const url = `https://statsapi.mlb.com/api/v1/schedule?sportId=${sportIds}&startDate=${startDate}&endDate=${endDate}&hydrate=team,venue,linescore`;
+        const url = `https://statsapi.mlb.com/api/v1/schedule?sportId=${sportIds}&startDate=${startDate}&endDate=${endDate}&hydrate=team,venue,linescore${teamParam}`;
         const res = await fetch(url);
+        if (!res.ok) throw new Error("API request failed");
+        
         const data = await res.json();
         renderGames(data.dates || []);
       } catch (err) {
@@ -351,7 +348,7 @@
         gamesContainer.innerHTML = `
           <div class="text-center py-12 text-rose-400">
             <p class="text-sm font-semibold">Failed to fetch MLB schedule.</p>
-            <p class="text-xs text-slate-400 mt-1">Please check your network connection and try again.</p>
+            <p class="text-xs text-slate-400 mt-1">Please check your network connection or try a shorter date range.</p>
           </div>
         `;
       }
@@ -367,7 +364,6 @@
         }
       });
 
-      // Filter by Favorite Teams (if any are selected)
       if (selectedTeamIds.length > 0) {
         allGames = allGames.filter(game => 
           selectedTeamIds.includes(game.teams.away.team.id) || 
@@ -435,9 +431,7 @@
       lucide.createIcons();
     }
 
-    // ----------------------------------------------------
     // 4. GAME SELECTION & HISTORICAL STATCAST LOGIC
-    // ----------------------------------------------------
     async function selectGame(game) {
       const matchup = `${game.teams.away.team.name} vs ${game.teams.home.team.name}`;
       const venue = game.venue?.name || 'Local Stadium';
@@ -451,7 +445,6 @@
       const searchQuery = encodeURIComponent(`${game.teams.home.team.name} tickets ${gameDateStr}`);
       ticketBtn.href = `https://www.seatgeek.com/search?search=${searchQuery}`;
 
-      // Statcast logic
       if (!game.venue || !game.venue.id) {
         document.getElementById('chart-overlay-msg').textContent = "Venue TBD. Cannot map fly balls.";
         document.getElementById('chart-overlay').classList.remove('hidden');
@@ -466,127 +459,121 @@
     }
 
     async function fetchStatcastFlyBalls(homeId, awayId, venueId) {
-  const overlay = document.getElementById('chart-overlay');
-  const overlayMsg = document.getElementById('chart-overlay-msg');
-  const hitGroup = document.getElementById('hit-markers-group');
-  const flyballBadge = document.getElementById('flyball-count');
+      const overlay = document.getElementById('chart-overlay');
+      const overlayMsg = document.getElementById('chart-overlay-msg');
+      const hitGroup = document.getElementById('hit-markers-group');
+      const flyballBadge = document.getElementById('flyball-count');
 
-  hitGroup.innerHTML = '';
-  overlay.classList.remove('hidden');
-  overlayMsg.innerHTML = `<div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent mb-2"></div><br>Finding historical games at this venue...`;
+      hitGroup.innerHTML = '';
+      overlay.classList.remove('hidden');
+      overlayMsg.innerHTML = `<div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent mb-2"></div><br>Finding historical games at this venue...`;
 
-  try {
-    // 1. Calculate dates (Look back 2 seasons)
-    const currentYear = new Date().getFullYear();
-    const twoSeasonsAgo = currentYear - 2;
-    const startDate = `${twoSeasonsAgo}-01-01`;
-    const today = new Date().toISOString().split('T')[0];
+      try {
+        const currentYear = new Date().getFullYear();
+        const yearsToSearch = [currentYear, currentYear - 1, currentYear - 2];
 
-    // 2. Fetch the schedule
-    const schedUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1,11,12,13,14&teamId=${homeId},${awayId}&startDate=${startDate}&endDate=${today}&venueIds=${venueId}`;
-    const schedRes = await fetch(schedUrl);
-    if (!schedRes.ok) throw new Error("Schedule fetch failed");
-    const schedData = await schedRes.json();
+        const schedPromises = yearsToSearch.map(year => {
+          const url = `https://statsapi.mlb.com/api/v1/schedule?sportId=1,11,12,13,14&teamId=${homeId},${awayId}&season=${year}&venueIds=${venueId}`;
+          return fetch(url).then(r => r.ok ? r.json() : null).catch(() => null);
+        });
+        
+        const schedResults = await Promise.all(schedPromises);
+        let gamePks = [];
 
-    let gamePks = [];
-    if (schedData.dates) {
-      schedData.dates.forEach(d => {
-        d.games.forEach(g => {
-          const gHome = g.teams.home.team.id;
-          const gAway = g.teams.away.team.id;
-          
-          // 3. Catch all variations of a completed game (F = Final, O = Game Over, C = Completed Early)
-          const isCompleted = ['F', 'O', 'C'].includes(g.status.statusCode);
-          
-          if (((gHome === homeId && gAway === awayId) || (gHome === awayId && gAway === homeId)) && isCompleted) {
-            gamePks.push(g.gamePk);
+        schedResults.forEach(schedData => {
+          if (schedData && schedData.dates) {
+            schedData.dates.forEach(d => {
+              d.games.forEach(g => {
+                const gHome = g.teams.home.team.id;
+                const gAway = g.teams.away.team.id;
+                
+                const isCompleted = ['F', 'O', 'C'].includes(g.status.statusCode);
+                if (((gHome === homeId && gAway === awayId) || (gHome === awayId && gAway === homeId)) && isCompleted) {
+                  gamePks.push(g.gamePk);
+                }
+              });
+            });
           }
         });
-      });
-    }
 
-    if (gamePks.length === 0) {
-      overlayMsg.textContent = "No completed historical games found for this exact matchup at this venue.";
-      return;
-    }
+        if (gamePks.length === 0) {
+          overlayMsg.textContent = "No completed historical games found for this exact matchup at this venue in the last 3 seasons.";
+          return;
+        }
 
-    // 4. Cap fetches to 20 games to keep the browser fast
-    const maxGamesToFetch = 20;
-    const gamesToProcess = gamePks.slice(-maxGamesToFetch);
+        const maxGamesToFetch = 20;
+        const gamesToProcess = gamePks.slice(-maxGamesToFetch);
 
-    overlayMsg.innerHTML = `<div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent mb-2"></div><br>Mapping ${gamesToProcess.length} historical games...`;
+        overlayMsg.innerHTML = `<div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent mb-2"></div><br>Mapping ${gamesToProcess.length} historical games...`;
 
-    // 5. BULLETPROOF FETCHING: If one game fails, return null and keep going instead of crashing
-    const feedPromises = gamesToProcess.map(pk => 
-      fetch(`https://statsapi.mlb.com/api/v1.1/game/${pk}/feed/live`)
-        .then(r => r.ok ? r.json() : null)
-        .catch(err => null) // Ignore network errors for individual games
-    );
-    
-    const allFeeds = await Promise.all(feedPromises);
-    // Filter out any games that failed to download
-    const validFeeds = allFeeds.filter(feed => feed !== null);
+        const feedPromises = gamesToProcess.map(pk => 
+          fetch(`https://statsapi.mlb.com/api/v1.1/game/${pk}/feed/live`)
+            .then(r => r.ok ? r.json() : null)
+            .catch(() => null) 
+        );
+        
+        const allFeeds = await Promise.all(feedPromises);
+        const validFeeds = allFeeds.filter(feed => feed !== null);
 
-    const flyBalls = [];
+        const flyBalls = [];
 
-    // 6. Extract the coordinates
-    validFeeds.forEach(feedData => {
-      const allPlays = feedData.liveData?.plays?.allPlays || [];
-      allPlays.forEach(play => {
-        const events = play.playEvents || [];
-        events.forEach(evt => {
-          if (evt.hitData) {
-            const trajectory = (evt.hitData.trajectory || '').toLowerCase();
-            if (trajectory === 'fly_ball' || trajectory === 'popup' || trajectory === 'line_drive') {
-              if (evt.hitData.coordinates && evt.hitData.coordinates.coordX && evt.hitData.coordinates.coordY) {
-                flyBalls.push({
-                  x: evt.hitData.coordinates.coordX,
-                  y: evt.hitData.coordinates.coordY,
-                  event: play.result?.event || 'In Play',
-                  trajectory: trajectory,
-                  desc: play.result?.description || ''
-                });
+        validFeeds.forEach(feedData => {
+          const allPlays = feedData.liveData?.plays?.allPlays || [];
+          allPlays.forEach(play => {
+            const events = play.playEvents || [];
+            events.forEach(evt => {
+              if (evt.hitData) {
+                const trajectory = (evt.hitData.trajectory || '').toLowerCase();
+                if (trajectory === 'fly_ball' || trajectory === 'popup' || trajectory === 'line_drive') {
+                  if (evt.hitData.coordinates && evt.hitData.coordinates.coordX && evt.hitData.coordinates.coordY) {
+                    flyBalls.push({
+                      x: evt.hitData.coordinates.coordX,
+                      y: evt.hitData.coordinates.coordY,
+                      event: play.result?.event || 'In Play',
+                      trajectory: trajectory,
+                      desc: play.result?.description || ''
+                    });
+                  }
+                }
               }
-            }
-          }
+            });
+          });
         });
-      });
-    });
 
-    flyballBadge.textContent = `${flyBalls.length} Fly Balls`;
+        flyballBadge.textContent = `${flyBalls.length} Fly Balls`;
 
-    if (flyBalls.length === 0) {
-      overlayMsg.textContent = "No Statcast X/Y coordinates available. (Note: Many Minor League venues do not track hit coordinates).";
-      return;
+        if (flyBalls.length === 0) {
+          overlayMsg.textContent = "No Statcast X/Y coordinates available for these historical matchups (Note: Most Minor League venues do not track hit coordinates).";
+          return;
+        }
+
+        overlay.classList.add('hidden');
+        renderSprayMarkers(flyBalls);
+
+      } catch (err) {
+        console.error("Heatmap Error:", err);
+        overlayMsg.innerHTML = `<span class="text-rose-400">Error connecting to MLB Statcast.</span><br><span class="text-[10px] mt-1 text-slate-500">Check browser console for details.</span>`;
+      }
     }
 
-    overlay.classList.add('hidden');
-    renderSprayMarkers(flyBalls);
-
-  } catch (err) {
-    console.error("Heatmap Error:", err);
-    overlayMsg.innerHTML = `<span class="text-rose-400">Error connecting to MLB Statcast.</span><br><span class="text-[10px] mt-1 text-slate-500">Check browser console for details.</span>`;
-  }
-}
-    
     function renderSprayMarkers(flyBalls) {
       const hitGroup = document.getElementById('hit-markers-group');
       hitGroup.innerHTML = '';
 
       flyBalls.forEach(ball => {
-        let color = '#38bdf8'; // sky blue
+        let color = '#38bdf8';
         const eventLower = ball.event.toLowerCase();
 
         if (eventLower.includes('home run') || eventLower.includes('triple') || eventLower.includes('double')) {
-          color = '#ef4444'; // Red
+          color = '#ef4444';
         } else if (eventLower.includes('single')) {
-          color = '#34d399'; // Emerald
+          color = '#34d399';
         }
 
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         circle.setAttribute('cx', ball.x);
         circle.setAttribute('cy', ball.y);
-        circle.setAttribute('r', '3'); // slightly smaller for density
+        circle.setAttribute('r', '3');
         circle.setAttribute('fill', color);
         circle.setAttribute('stroke', '#ffffff');
         circle.setAttribute('stroke-width', '0.5');
