@@ -38,7 +38,7 @@
         <span class="text-3xl">⚾</span>
         <div>
           <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-            Ballpark Vacation & Statcast Tracker v3
+            Ballpark Vacation & Statcast Tracker v4
           </h1>
           <p class="text-xs text-slate-400">Discover MLB & MiLB games and analyze fly ball landing zones</p>
         </div>
@@ -337,7 +337,7 @@
       `;
 
       try {
-        const url = `https://statsapi.mlb.com/api/v1/schedule?"sportId=${sportIds}"&startDate=${startDate}&endDate=${endDate}&hydrate=team,venue,linescore${teamParam}`;
+        const url = `https://statsapi.mlb.com/api/v1/schedule?sportId=${sportIds}&startDate=${startDate}&endDate=${endDate}&hydrate=team,venue,linescore${teamParam}`;
         const res = await fetch(url);
         if (!res.ok) throw new Error("API request failed");
         
@@ -473,7 +473,7 @@
         const yearsToSearch = [currentYear, currentYear - 1, currentYear - 2];
 
         const schedPromises = yearsToSearch.map(year => {
-          const url = `https://statsapi.mlb.com/api/v1/schedule?"sportId=1,11,12,13,14"&teamId=${homeId},${awayId}&season=${year}&venueIds=${venueId}`;
+          const url = `https://statsapi.mlb.com/api/v1/schedule?sportId=1,11,12,13,14&teamId=${homeId},${awayId}&season=${year}&venueIds=${venueId}`;
           return fetch(url).then(r => r.ok ? r.json() : null).catch(() => null);
         });
         
