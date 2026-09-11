@@ -8,6 +8,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Flatpickr Datepicker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <style>
     .spray-field {
       background: radial-gradient(circle at 50% 90%, #2e7d32 0%, #1b5e20 85%);
@@ -50,12 +54,12 @@
         <form id="search-form" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label class="block text-xs text-slate-400 mb-1">Start Date</label>
-            <input type="date" id="start-date" required
+            <input type="text" id="start-date" required
               class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition">
           </div>
           <div>
             <label class="block text-xs text-slate-400 mb-1">End Date</label>
-            <input type="date" id="end-date" required
+            <input type="text" id="end-date" required
               class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition">
           </div>
           <div class="flex items-end">
@@ -272,12 +276,21 @@ leagueFilters.forEach(id => {
 
     fetchTeams(); // Trigger immediately
 
-    // Default dates: Upcoming 5-day window from today
-    const today = new Date();
-    const nextWeek = new Date();
-    nextWeek.setDate(today.getDate() + 6);
-    document.getElementById('start-date').value = today.toISOString().split('T');
-    document.getElementById('end-date').value = nextWeek.toISOString().split('T');
+// Initialize Flatpickr Calendar Controls
+const startDatePicker = flatpickr("#start-date", {
+  dateFormat: "Y-m-d",
+  defaultDate: "today",
+  onChange: function(selectedDates, dateStr, instance) {
+    // Prevent end date from being before start date
+    endDatePicker.set('minDate', dateStr);
+  }
+});
+
+const endDatePicker = flatpickr("#end-date", {
+  dateFormat: "Y-m-d",
+  defaultDate: new Date().fp_incr(6), // Sets default to 6 days from today
+  minDate: "today"
+});
 
     // Sport IDs according to MLB Stats API:
     // 1: MLB, 11: Triple-A (AAA), 12: Double-A (AA), 13: High-A (A+), 14: Single-A (A)
