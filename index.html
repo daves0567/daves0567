@@ -38,9 +38,9 @@
         <span class="text-3xl">⚾</span>
         <div>
           <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-            Ballpark Vacation & Statcast Tracker v5
+            Ballpark Vacation & Statcast Tracker v6
           </h1>
-          <p class="text-xs text-slate-400">Discover MLB & MiLB games and analyze fly ball landing zones</p>
+          <p class="text-xs text-slate-400">Discover MLB & MiLB games and analyze fly ball & foul ball landing zones</p>
         </div>
       </div>
       <div class="flex items-center space-x-2 text-xs text-slate-400 bg-slate-900/60 px-3 py-1.5 rounded-full border border-slate-700">
@@ -62,54 +62,55 @@
           <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> Plan Vacation Days
         </h2>
 
-<form id="search-form" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-  <!-- Dates -->
-  <div>
-    <label class="block text-xs text-slate-400 mb-1">Start Date</label>
-    <input type="text" id="start-date" required
-      class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition cursor-pointer">
-  </div>
-  <div>
-    <label class="block text-xs text-slate-400 mb-1">End Date</label>
-    <input type="text" id="end-date" required
-      class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition cursor-pointer">
-  </div>
-  <div class="flex items-end">
-    <button type="submit" id="search-btn"
-      class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition duration-150 shadow-lg shadow-emerald-900/30">
-      <i data-lucide="search" class="w-4 h-4"></i> Search Games
-    </button>
-  </div>
+        <form id="search-form" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <!-- Dates -->
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Start Date</label>
+            <input type="text" id="start-date" required
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition cursor-pointer">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">End Date</label>
+            <input type="text" id="end-date" required
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition cursor-pointer">
+          </div>
+          <div class="flex items-end">
+            <button type="submit" id="search-btn"
+              class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition duration-150 shadow-lg shadow-emerald-900/30">
+              <i data-lucide="search" class="w-4 h-4"></i> Search Games
+            </button>
+          </div>
 
-  <!-- League Filter Switches (MOVED HERE) -->
-  <div class="col-span-1 sm:col-span-3 flex flex-wrap gap-4 text-xs text-slate-300 pt-3 pb-2 border-b border-slate-700/60 mt-1">
-    <span class="text-slate-400 self-center">Leagues:</span>
-    <label class="inline-flex items-center gap-1.5 cursor-pointer">
-      <input type="checkbox" id="check-mlb" checked class="accent-emerald-500 rounded"> MLB (Major)
-    </label>
-    <label class="inline-flex items-center gap-1.5 cursor-pointer">
-      <input type="checkbox" id="check-aaa" checked class="accent-emerald-500 rounded"> Triple-A (AAA)
-    </label>
-    <label class="inline-flex items-center gap-1.5 cursor-pointer">
-      <input type="checkbox" id="check-aa" checked class="accent-emerald-500 rounded"> Double-A (AA)
-    </label>
-    <label class="inline-flex items-center gap-1.5 cursor-pointer">
-      <input type="checkbox" id="check-a" checked class="accent-emerald-500 rounded"> High-A / Single-A
-    </label>
-  </div>
+          <!-- League Filter Switches -->
+          <div class="col-span-1 sm:col-span-3 flex flex-wrap gap-4 text-xs text-slate-300 pt-3 pb-2 border-b border-slate-700/60 mt-1">
+            <span class="text-slate-400 self-center">Leagues:</span>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="check-mlb" checked class="accent-emerald-500 rounded"> MLB (Major)
+            </label>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="check-aaa" checked class="accent-emerald-500 rounded"> Triple-A (AAA)
+            </label>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="check-aa" checked class="accent-emerald-500 rounded"> Double-A (AA)
+            </label>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="check-a" checked class="accent-emerald-500 rounded"> High-A / Single-A
+            </label>
+          </div>
 
-  <!-- Favorite Teams Selector -->
-  <div class="col-span-1 sm:col-span-3 mt-1">
-    <label class="block text-xs text-slate-400 mb-1">Favorite Teams (Leave blank to see all games)</label>
-    <div class="relative bg-slate-900 border border-slate-700 rounded-lg p-2">
-      <input type="text" id="team-search" placeholder="Search teams (e.g., Yankees, Durham)..." 
-        class="w-full bg-slate-800 border border-slate-700 rounded text-sm text-slate-200 px-3 py-1.5 mb-2 focus:outline-none focus:border-emerald-500">
-      <div id="team-checkbox-list" class="max-h-32 overflow-y-auto space-y-1 pr-1">
-        <div class="text-xs text-slate-500 text-center py-2">Loading teams...</div>
+          <!-- Favorite Teams Selector -->
+          <div class="col-span-1 sm:col-span-3 mt-1">
+            <label class="block text-xs text-slate-400 mb-1">Favorite Teams (Leave blank to see all games)</label>
+            <div class="relative bg-slate-900 border border-slate-700 rounded-lg p-2">
+              <input type="text" id="team-search" placeholder="Search teams (e.g., Yankees, Durham)..." 
+                class="w-full bg-slate-800 border border-slate-700 rounded text-sm text-slate-200 px-3 py-1.5 mb-2 focus:outline-none focus:border-emerald-500">
+              <div id="team-checkbox-list" class="max-h-32 overflow-y-auto space-y-1 pr-1">
+                <div class="text-xs text-slate-500 text-center py-2">Loading teams...</div>
+              </div>
+            </div>
+          </div>
+        </form>
       </div>
-    </div>
-  </div>
-</form>
 
       <!-- Games List -->
       <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl flex-grow flex flex-col overflow-hidden">
@@ -118,7 +119,7 @@
             <i data-lucide="list" class="w-4 h-4 text-cyan-400"></i> Games Found
             <span id="game-count" class="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full ml-1">0</span>
           </h2>
-          <span class="text-xs text-slate-400">Click any game to inspect Statcast fly balls</span>
+          <span class="text-xs text-slate-400">Click any game to inspect Statcast fly & foul balls</span>
         </div>
 
         <div id="games-container" class="p-4 overflow-y-auto space-y-3 max-h-[600px] flex-grow">
@@ -157,10 +158,10 @@
       <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-xl p-5 flex flex-col items-center">
         <div class="w-full flex justify-between items-center mb-3">
           <h3 class="text-sm font-semibold flex items-center gap-2 text-slate-200">
-            <i data-lucide="crosshair" class="w-4 h-4 text-emerald-400"></i> Fly Ball Landing Heatmap
+            <i data-lucide="crosshair" class="w-4 h-4 text-emerald-400"></i> Fly & Foul Ball Heatmap
           </h3>
           <span id="flyball-count" class="text-xs bg-emerald-950 border border-emerald-800 text-emerald-300 px-2 py-0.5 rounded">
-            0 Fly Balls
+            0 Batted Balls
           </span>
         </div>
 
@@ -185,20 +186,23 @@
           <!-- Empty or Loading Overlay -->
           <div id="chart-overlay" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-center p-4">
             <i data-lucide="pie-chart" class="w-8 h-8 text-slate-500 mb-2"></i>
-            <p id="chart-overlay-msg" class="text-xs text-slate-400">Select any game to plot historical fly ball landing locations.</p>
+            <p id="chart-overlay-msg" class="text-xs text-slate-400">Select any game to plot historical fly & foul ball landing locations.</p>
           </div>
         </div>
 
         <!-- Legend -->
-        <div class="w-full mt-3 flex justify-around text-[11px] text-slate-400 border-t border-slate-700/60 pt-2">
+        <div class="w-full mt-3 flex justify-around text-[11px] text-slate-400 border-t border-slate-700/60 pt-2 flex-wrap gap-2">
           <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> Home Run / Extra Base
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> Home Run / XBH
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Flyout / Caught
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Flyout
           </div>
           <div class="flex items-center gap-1.5">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Base Hit
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Foul Ball
           </div>
         </div>
       </div>
@@ -431,7 +435,7 @@
       lucide.createIcons();
     }
 
-    // 4. GAME SELECTION & HISTORICAL STATCAST LOGIC
+    // 4. GAME SELECTION & HISTORICAL STATCAST LOGIC (WITH FOUL BALLS)
     async function selectGame(game) {
       const matchup = `${game.teams.away.team.name} vs ${game.teams.home.team.name}`;
       const venue = game.venue?.name || 'Local Stadium';
@@ -522,25 +526,26 @@
           allPlays.forEach(play => {
             const events = play.playEvents || [];
             events.forEach(evt => {
-              if (evt.hitData) {
+              if (evt.hitData && evt.hitData.coordinates && evt.hitData.coordinates.coordX && evt.hitData.coordinates.coordY) {
                 const trajectory = (evt.hitData.trajectory || '').toLowerCase();
-                if (trajectory === 'fly_ball' || trajectory === 'popup' || trajectory === 'line_drive') {
-                  if (evt.hitData.coordinates && evt.hitData.coordinates.coordX && evt.hitData.coordinates.coordY) {
-                    flyBalls.push({
-                      x: evt.hitData.coordinates.coordX,
-                      y: evt.hitData.coordinates.coordY,
-                      event: play.result?.event || 'In Play',
-                      trajectory: trajectory,
-                      desc: play.result?.description || ''
-                    });
-                  }
+                const pitchDesc = (evt.details?.description || '').toLowerCase();
+                const isFoul = pitchDesc.includes('foul');
+
+                if (trajectory === 'fly_ball' || trajectory === 'popup' || trajectory === 'line_drive' || isFoul) {
+                  flyBalls.push({
+                    x: evt.hitData.coordinates.coordX,
+                    y: evt.hitData.coordinates.coordY,
+                    event: isFoul ? 'Foul Ball' : (play.result?.event || 'In Play'),
+                    trajectory: trajectory || 'Unknown',
+                    desc: isFoul ? (evt.details?.description || 'Foul Ball') : (play.result?.description || '')
+                  });
                 }
               }
             });
           });
         });
 
-        flyballBadge.textContent = `${flyBalls.length} Fly Balls`;
+        flyballBadge.textContent = `${flyBalls.length} Batted Balls`;
 
         if (flyBalls.length === 0) {
           overlayMsg.textContent = "No Statcast X/Y coordinates available for these historical matchups (Note: Most Minor League venues do not track hit coordinates).";
@@ -561,13 +566,15 @@
       hitGroup.innerHTML = '';
 
       flyBalls.forEach(ball => {
-        let color = '#38bdf8';
+        let color = '#38bdf8'; // Sky Blue (Flyout)
         const eventLower = ball.event.toLowerCase();
 
         if (eventLower.includes('home run') || eventLower.includes('triple') || eventLower.includes('double')) {
-          color = '#ef4444';
+          color = '#ef4444'; // Red (XBH/HR)
         } else if (eventLower.includes('single')) {
-          color = '#34d399';
+          color = '#34d399'; // Emerald (Base Hit)
+        } else if (eventLower.includes('foul')) {
+          color = '#fbbf24'; // Amber (Foul Ball)
         }
 
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
