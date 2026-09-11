@@ -465,7 +465,7 @@
       fetchStatcastFlyBalls(homeId, awayId, venueId);
     }
 
-async function fetchStatcastFlyBalls(homeId, awayId, venueId) {
+    async function fetchStatcastFlyBalls(homeId, awayId, venueId) {
   const overlay = document.getElementById('chart-overlay');
   const overlayMsg = document.getElementById('chart-overlay-msg');
   const hitGroup = document.getElementById('hit-markers-group');
@@ -476,15 +476,16 @@ async function fetchStatcastFlyBalls(homeId, awayId, venueId) {
   overlayMsg.innerHTML = `<div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent mb-2"></div><br>Finding historical games at this venue...`;
 
   try {
-    // 1. Look back 2 seasons
+    // 1. Calculate dates (Look back 2 seasons)
     const currentYear = new Date().getFullYear();
     const twoSeasonsAgo = currentYear - 2;
     const startDate = `${twoSeasonsAgo}-01-01`;
     const today = new Date().toISOString().split('T')[0];
 
-    // 2. Restore venueIds to prevent downloading massive, browser-crashing data payloads
+    // 2. Fetch the schedule
     const schedUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1,11,12,13,14&teamId=${homeId},${awayId}&startDate=${startDate}&endDate=${today}&venueIds=${venueId}`;
     const schedRes = await fetch(schedUrl);
+    if (!schedRes.ok) throw new Error("Schedule fetch failed");
     const schedData = await schedRes.json();
 
     let gamePks = [];
@@ -494,9 +495,10 @@ async function fetchStatcastFlyBalls(homeId, awayId, venueId) {
           const gHome = g.teams.home.team.id;
           const gAway = g.teams.away.team.id;
           
-          // 3. The Core Fix: Ensure the game is strictly 'Final' (completed). 
-          // This ignores today's upcoming game and future games.
-          if (((gHome === homeId && gAway === awayId) || (gHome === awayId && gAway === homeId)) && g.status.abstractGameState === 'Final') {
+          // 3. Catch all variations of a completed game (F = Final, O = Game Over, C = Completed Early)
+          const isCompleted = ['F', 'O', 'C'].includes(g.status.statusCode);
+          
+          if (((gHome === homeId && gAway === awayId) || (gHome === awayId && gAway === homeId)) && isCompleted) {
             gamePks.push(g.gamePk);
           }
         });
@@ -504,22 +506,31 @@ async function fetchStatcastFlyBalls(homeId, awayId, venueId) {
     }
 
     if (gamePks.length === 0) {
-      overlayMsg.textContent = "No completed historical games found for this matchup at this specific venue recently.";
+      overlayMsg.textContent = "No completed historical games found for this exact matchup at this venue.";
       return;
     }
 
-    // Cap the fetches to the most recent 25 games to prevent rate-limiting
-    const maxGamesToFetch = 25;
+    // 4. Cap fetches to 20 games to keep the browser fast
+    const maxGamesToFetch = 20;
     const gamesToProcess = gamePks.slice(-maxGamesToFetch);
 
     overlayMsg.innerHTML = `<div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent mb-2"></div><br>Mapping ${gamesToProcess.length} historical games...`;
 
-    const feedPromises = gamesToProcess.map(pk => fetch(`https://statsapi.mlb.com/api/v1.1/game/${pk}/feed/live`).then(r => r.json()));
+    // 5. BULLETPROOF FETCHING: If one game fails, return null and keep going instead of crashing
+    const feedPromises = gamesToProcess.map(pk => 
+      fetch(`https://statsapi.mlb.com/api/v1.1/game/${pk}/feed/live`)
+        .then(r => r.ok ? r.json() : null)
+        .catch(err => null) // Ignore network errors for individual games
+    );
+    
     const allFeeds = await Promise.all(feedPromises);
+    // Filter out any games that failed to download
+    const validFeeds = allFeeds.filter(feed => feed !== null);
 
     const flyBalls = [];
 
-    allFeeds.forEach(feedData => {
+    // 6. Extract the coordinates
+    validFeeds.forEach(feedData => {
       const allPlays = feedData.liveData?.plays?.allPlays || [];
       allPlays.forEach(play => {
         const events = play.playEvents || [];
@@ -545,7 +556,7 @@ async function fetchStatcastFlyBalls(homeId, awayId, venueId) {
     flyballBadge.textContent = `${flyBalls.length} Fly Balls`;
 
     if (flyBalls.length === 0) {
-      overlayMsg.textContent = "No Statcast tracked fly ball coordinates available for these historical matchups.";
+      overlayMsg.textContent = "No Statcast X/Y coordinates available. (Note: Many Minor League venues do not track hit coordinates).";
       return;
     }
 
@@ -553,8 +564,8 @@ async function fetchStatcastFlyBalls(homeId, awayId, venueId) {
     renderSprayMarkers(flyBalls);
 
   } catch (err) {
-    console.error(err);
-    overlayMsg.textContent = "Unable to retrieve aggregated Statcast feeds for this matchup.";
+    console.error("Heatmap Error:", err);
+    overlayMsg.innerHTML = `<span class="text-rose-400">Error connecting to MLB Statcast.</span><br><span class="text-[10px] mt-1 text-slate-500">Check browser console for details.</span>`;
   }
 }
     
