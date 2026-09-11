@@ -473,17 +473,17 @@ async function fetchStatcastFlyBalls(homeId, awayId, venueId) {
 
   hitGroup.innerHTML = '';
   overlay.classList.remove('hidden');
-  overlayMsg.innerHTML = `<div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent mb-2"></div><br>Finding historical games for this matchup...`;
+  overlayMsg.innerHTML = `<div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent mb-2"></div><br>Finding historical games at this venue...`;
 
   try {
-    // 1. Expand lookback to 3 years to catch rare interleague matchups
+    // 1. Look back 2 seasons
     const currentYear = new Date().getFullYear();
-    const threeSeasonsAgo = currentYear - 3;
-    const startDate = `${threeSeasonsAgo}-01-01`;
+    const twoSeasonsAgo = currentYear - 2;
+    const startDate = `${twoSeasonsAgo}-01-01`;
     const today = new Date().toISOString().split('T')[0];
 
-    // 2. Remove venueIds from the URL so we get their history regardless of the stadium
-    const schedUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1,11,12,13,14&teamId=${homeId},${awayId}&startDate=${startDate}&endDate=${today}`;
+    // 2. Restore venueIds to prevent downloading massive, browser-crashing data payloads
+    const schedUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1,11,12,13,14&teamId=${homeId},${awayId}&startDate=${startDate}&endDate=${today}&venueIds=${venueId}`;
     const schedRes = await fetch(schedUrl);
     const schedData = await schedRes.json();
 
@@ -494,8 +494,8 @@ async function fetchStatcastFlyBalls(homeId, awayId, venueId) {
           const gHome = g.teams.home.team.id;
           const gAway = g.teams.away.team.id;
           
-          // 3. CRUCIAL FIX: Ensure the abstractGameState is 'Final'
-          // This ignores scheduled/future games that haven't been played yet
+          // 3. The Core Fix: Ensure the game is strictly 'Final' (completed). 
+          // This ignores today's upcoming game and future games.
           if (((gHome === homeId && gAway === awayId) || (gHome === awayId && gAway === homeId)) && g.status.abstractGameState === 'Final') {
             gamePks.push(g.gamePk);
           }
@@ -504,17 +504,16 @@ async function fetchStatcastFlyBalls(homeId, awayId, venueId) {
     }
 
     if (gamePks.length === 0) {
-      overlayMsg.textContent = "No completed historical games found for this matchup in the past 3 years.";
+      overlayMsg.textContent = "No completed historical games found for this matchup at this specific venue recently.";
       return;
     }
 
-    // Limit to prevent browser crashes
+    // Cap the fetches to the most recent 25 games to prevent rate-limiting
     const maxGamesToFetch = 25;
     const gamesToProcess = gamePks.slice(-maxGamesToFetch);
 
     overlayMsg.innerHTML = `<div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent mb-2"></div><br>Mapping ${gamesToProcess.length} historical games...`;
 
-    // Fetch all feeds concurrently
     const feedPromises = gamesToProcess.map(pk => fetch(`https://statsapi.mlb.com/api/v1.1/game/${pk}/feed/live`).then(r => r.json()));
     const allFeeds = await Promise.all(feedPromises);
 
