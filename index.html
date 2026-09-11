@@ -38,7 +38,7 @@
         <span class="text-3xl">⚾</span>
         <div>
           <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-            Ballpark Vacation & Statcast Tracker v7
+            Ballpark Vacation & Statcast Tracker v8
           </h1>
           <p class="text-xs text-slate-400">Discover MLB & MiLB games and analyze fly ball & foul ball landing zones</p>
         </div>
@@ -521,34 +521,36 @@
 
         const flyBalls = [];
 
-        validFeeds.forEach(feedData => {
-          const allPlays = feedData.liveData?.plays?.allPlays || [];
-          allPlays.forEach(play => {
-            const finalPlayEvent = play.result?.event || 'In Play';
-            const finalPlayDesc = play.result?.description || '';
+validFeeds.forEach(feedData => {
+  const allPlays = feedData.liveData?.plays?.allPlays || [];
+  allPlays.forEach(play => {
+    const finalPlayEvent = play.result?.event || 'In Play';
+    const finalPlayDesc = play.result?.description || '';
 
-            const events = play.playEvents || [];
-            events.forEach(evt => {
-              if (evt.hitData && evt.hitData.coordinates && evt.hitData.coordinates.coordX && evt.hitData.coordinates.coordY) {
-                const trajectory = (evt.hitData.trajectory || '').toLowerCase();
-                const pitchDesc = (evt.details?.description || '').toLowerCase();
-                
-                const isFoul = pitchDesc.includes('foul') || finalPlayEvent.toLowerCase().includes('foul');
-                const isGrounder = trajectory === 'ground_ball';
+    const events = play.playEvents || [];
+    events.forEach(evt => {
+      // Only process pitches that the API actually attached X/Y coordinates to
+      if (evt.hitData && evt.hitData.coordinates && evt.hitData.coordinates.coordX && evt.hitData.coordinates.coordY) {
+        const trajectory = (evt.hitData.trajectory || '').toLowerCase();
+        
+        // The API logs fieldable foul balls with 'foul' in the final play event name
+        const isFoulOut = finalPlayEvent.toLowerCase().includes('foul');
+        const isGrounder = trajectory === 'ground_ball';
 
-                if (!isGrounder || isFoul) {
-                  flyBalls.push({
-                    x: evt.hitData.coordinates.coordX,
-                    y: evt.hitData.coordinates.coordY,
-                    event: isFoul ? 'Foul Ball / Foul Out' : finalPlayEvent,
-                    trajectory: trajectory || 'Unknown',
-                    desc: isFoul ? finalPlayDesc : finalPlayDesc
-                  });
-                }
-              }
-            });
+        // Plot if it's a fly ball/line drive OR if it's a charted foul out
+        if (!isGrounder || isFoulOut) {
+          flyBalls.push({
+            x: evt.hitData.coordinates.coordX,
+            y: evt.hitData.coordinates.coordY,
+            event: isFoulOut ? 'Foul Out' : finalPlayEvent,
+            trajectory: trajectory || 'Unknown',
+            desc: finalPlayDesc
           });
-        });
+        }
+      }
+    });
+  });
+});
 
         flyballBadge.textContent = `${flyBalls.length} Batted Balls`;
 
